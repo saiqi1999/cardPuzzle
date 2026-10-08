@@ -1,6 +1,37 @@
+/**
+ * 用途：集中管理卡牌视觉，避免入口和交互脚本重复维护布局。
+ * 职责：按卡牌宽高生成画像、文字、符号与气泡，响应数据和尺寸更新。
+ * 运行边界：挂在带 UITransform 的卡牌根节点上；父节点须为 UI 桌面。
+ * 本脚本独占根节点子节点（刷新时重建），不要手动在其下添加持久节点。
+ * 卡根节点须中心锚点、无旋转，缩放由本脚本管理；不处理拖动、配方和解谜判定。
+ * 调整入口：文件顶部 CARD_SIZE / CARD_LAYOUT / CARD_STYLE；运行时调用 setSize。
+ * 宽高比例可改变，但底图会随之拉伸；画像保持比例裁切，徽章和符号保持正方形。
+ */
 import { _decorator, Component, Node, UITransform, Sprite, SpriteFrame, Label, Color, Mask, Layers } from 'cc';
 import { CardData } from './CardData';
 const { ccclass } = _decorator;
+
+// 唯一默认像素尺寸；Main 不再重复指定卡牌宽高。
+export const CARD_SIZE = { width: 250, height: 350 } as const;
+// 0.5 = 50%。位置以卡牌中心为原点，x 向右、y 向上。
+// x / width 相对卡宽，y / height 相对卡高；字体与正方形图标相对卡宽。
+export const CARD_LAYOUT = {
+    portrait: { width: 0.792, height: 0.45143, x: 0, y: 0.19429 },
+    name: { width: 0.76, height: 0.08, x: 0, y: -0.14857, font: 0.076 },
+    badge: { size: 0.096, x: -0.348, y: 0.40571 },
+    demand: { y: -0.28571, width: 0.76 },
+    translation: { width: 0.76, height: 0.07429, x: 0, y: -0.4, font: 0.064 },
+    bubble: { size: 0.64, centerY: 0.7, symbolY: 0.09375, rowWidth: 0.8 },
+    // bubble.symbolY 和 rowWidth 相对气泡自身尺寸，其余比例相对卡牌。
+    symbols: { size: 0.128, compactSize: 0.064, gap: 0.032, compactAbove: 4 },
+} as const;
+export const CARD_STYLE = {
+    hoverScale: 1.05,
+    lineSpacing: 0.016, // 相对卡宽
+    textColor: { r: 65, g: 42, b: 34 },
+    untranslated: '尚未破译',
+} as const;
+
 export interface CardArt {
     background: SpriteFrame; portrait: SpriteFrame; badge: SpriteFrame;
     bubble: SpriteFrame; symbols: Record<string, SpriteFrame>;
@@ -9,49 +40,79 @@ export interface CardArt {
 export class CardView extends Component {
     private bubble: Node | null = null;
     private art: CardArt | null = null;
+    private data: CardData | null = null;
+    private width: number = CARD_SIZE.width;
+    private height: number = CARD_SIZE.height;
     public hovered = false;
+    /** 更新布局尺寸；气泡开关和悬停状态保留。非法尺寸立即报错。 */
+    public setSize(width: number, height: number): void {
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+            throw new Error('CardView.setSize: 宽高必须为大于零的有限数字');
+        }
+        this.width = width; this.height = height;
+        this.node.getComponent(UITransform)!.setContentSize(width, height);
+        if (this.data) this.setData(this.data);
+    }
     public initialize(art: CardArt, data: CardData): void {
         this.art = art;
-        this.node.getComponent(UITransform)!.setContentSize(250, 350);
+        this.setSize(this.width, this.height);
         this.setData(data);
     }
     public setData(data: CardData): void {
+        this.data = data;
         if (!this.art) return;
+        const speechVisible = this.bubble?.active ?? false;
         for (const child of [...this.node.children]) { child.removeFromParent(); child.destroy(); }
         const art = this.art;
-        this.picture(this.node, 'Background', art.background, 250, 350, 0, 0);
-        // Inset avoids the frame, top-left badge and name ribbon.
-        const mask = this.box(this.node, 'PortraitMask', 198, 158, 0, 68);
-        mask.addComponent(Mask); // Default rectangular mask.
+        const w = this.width, h = this.height;
+        const { portrait, name, badge, demand, translation, bubble } = CARD_LAYOUT;
+        this.picture(this.node, 'Background', art.background, w, h, 0, 0);
+        const mask = this.box(this.node, 'PortraitMask', w * portrait.width, h * portrait.height,
+            w * portrait.x, h * portrait.y);
+        mask.addComponent(Mask);
         const ratio = art.portrait.originalSize.width / art.portrait.originalSize.height;
-        const width = Math.max(198, 158 * ratio);
-        this.picture(mask, 'Portrait', art.portrait, width, width / ratio, 0, 0);
-        this.label(this.node, 'NameLabel', data.name, 190, 28, 0, -52, 19);
-        this.picture(this.node, 'Badge', art.badge, 24, 24, -87, 142);
-        this.symbols(this.node, data.demandSymbols, -100);
-        this.label(this.node, 'TranslationLabel', data.translation || '尚未破译', 190, 26, 0, -140, 16);
-        this.bubble = this.box(this.node, 'SpeechBubble', 160, 160, 0, 245);
-        this.picture(this.bubble, 'Background', art.bubble, 160, 160, 0, 0);
-        this.symbols(this.bubble, data.demandSymbols, 15);
-        this.bubble.active = false;
+        const portraitWidth = Math.max(w * portrait.width, h * portrait.height * ratio);
+        this.picture(mask, 'Portrait', art.portrait, portraitWidth, portraitWidth / ratio, 0, 0);
+        this.label(this.node, 'NameLabel', data.name, w * name.width, h * name.height,
+            w * name.x, h * name.y, w * name.font);
+        this.picture(this.node, 'Badge', art.badge, w * badge.size, w * badge.size,
+            w * badge.x, h * badge.y);
+        this.symbols(this.node, data.demandSymbols, h * demand.y, w * demand.width);
+        this.label(this.node, 'TranslationLabel', data.translation || CARD_STYLE.untranslated,
+            w * translation.width, h * translation.height, w * translation.x,
+            h * translation.y, w * translation.font);
+        const bubbleSize = w * bubble.size;
+        this.bubble = this.box(this.node, 'SpeechBubble', bubbleSize, bubbleSize, 0, h * bubble.centerY);
+        this.picture(this.bubble, 'Background', art.bubble, bubbleSize, bubbleSize, 0, 0);
+        this.symbols(this.bubble, data.demandSymbols, bubbleSize * bubble.symbolY, bubbleSize * bubble.rowWidth);
+        this.bubble.active = speechVisible;
     }
     public setHovered(value: boolean): void {
         this.hovered = value;
-        this.node.setScale(value ? 1.05 : 1, value ? 1.05 : 1, 1);
+        const scale = value ? CARD_STYLE.hoverScale : 1;
+        this.node.setScale(scale, scale, 1);
     }
     public toggleSpeech(): void { if (this.bubble) this.bubble.active = !this.bubble.active; }
     protected lateUpdate(): void {
         if (!this.bubble?.active || !this.node.parent) return;
         const board = this.node.parent.getComponent(UITransform)!;
         const top = (1 - board.anchorY) * board.height;
-        const above = this.node.position.y + 325 * this.node.scale.y <= top;
-        this.bubble.setPosition(0, above ? 245 : -245);
+        const centerY = this.height * CARD_LAYOUT.bubble.centerY;
+        const halfSize = this.width * CARD_LAYOUT.bubble.size / 2;
+        const above = this.node.position.y + (centerY + halfSize) * this.node.scale.y <= top;
+        this.bubble.setPosition(0, above ? centerY : -centerY);
     }
-    private symbols(parent: Node, ids: string[], y: number): void {
-        const row = this.box(parent, 'Symbols', 190, 32, 0, y);
-        const size = ids.length <= 4 ? 32 : 16;
+    private symbols(parent: Node, ids: string[], y: number, rowWidth: number): void {
+        const layout = CARD_LAYOUT.symbols;
+        const desiredSize = this.width * (ids.length <= layout.compactAbove ? layout.size : layout.compactSize);
+        const desiredGap = this.width * layout.gap;
+        // 长符号序列整体缩小，保证不会超出当前行；空序列保持空行。
+        const total = ids.length * desiredSize + Math.max(0, ids.length - 1) * desiredGap;
+        const fit = total > 0 ? Math.min(1, rowWidth / total) : 1;
+        const size = desiredSize * fit, gap = desiredGap * fit;
+        const row = this.box(parent, 'Symbols', rowWidth, desiredSize, 0, y);
         ids.forEach((id, i) => this.picture(row, id, this.art!.symbols[id] || this.art!.badge,
-            size, size, (i - (ids.length - 1) / 2) * (size + 8), 0));
+            size, size, (i - (ids.length - 1) / 2) * (size + gap), 0));
     }
     private box(parent: Node, name: string, width: number, height: number, x: number, y: number): Node {
         const node = new Node(name); node.layer = Layers.Enum.UI_2D;
@@ -65,8 +126,9 @@ export class CardView extends Component {
     }
     private label(parent: Node, name: string, text: string, w: number, h: number, x: number, y: number, size: number): void {
         const node = this.box(parent, name, w, h, x, y); const label = node.addComponent(Label);
-        label.string = text; label.fontSize = size; label.lineHeight = size + 4;
+        label.string = text; label.fontSize = size; label.lineHeight = size + this.width * CARD_STYLE.lineSpacing;
         label.horizontalAlign = Label.HorizontalAlign.CENTER; label.verticalAlign = Label.VerticalAlign.CENTER;
-        label.overflow = Label.Overflow.SHRINK; label.color = new Color(65, 42, 34);
+        label.overflow = Label.Overflow.SHRINK; const color = CARD_STYLE.textColor;
+        label.color = new Color(color.r, color.g, color.b);
     }
 }
