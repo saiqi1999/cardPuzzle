@@ -26,25 +26,25 @@ export const CARD_LAYOUT = {
 // 气泡宽度沿用你的 1.64 倍设置。文本采用独立 UI 像素字号，不受卡牌字体比例影响。
 // 内容超出时换行并自动增加主体高度，不缩小符号或译文。
 export const BUBBLE_LAYOUT = {
-    widthRatio: 1.64,
-    minHeightRatio: 1.64,
+    widthRatio: 2.34,
+    minHeightRatio: 0.74,
     cardGapRatio: 0.06,
     pixelScale: 1,
-    padding: 10,
+    padding: 2,
     symbolSize: 32,
     translationFontSize: 12,
-    translationLineHeight: 16,
+    translationLineHeight: 12,
     translationLines: 2,
     cellWidth: 40,
     columnGap: 4,
     symbolTranslationGap: 4,
-    rowGap: 10,
+    rowGap: 6,
 } as const;
 export const CARD_STYLE = {
     hoverScale: 1.05,
     lineSpacing: 0.016, // 相对卡宽
     textColor: { r: 65, g: 42, b: 34 },
-    untranslated: '尚未破译',
+    untranslated: '_',
 } as const;
 
 export interface CardArt {
