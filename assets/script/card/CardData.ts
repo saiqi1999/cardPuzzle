@@ -9,9 +9,14 @@ export interface CardData {
     type: 'npc' | 'material' | 'facility';
     name: string;
     demandSymbols: string[];
-    translation?: string;
+    /** 卡面上的人物描述，可用换行分段。 */
+    descriptions: string;
+    /** 符号 ID -> 玩家当前译义；缺失表示尚未破译。 */
+    translations?: Record<string, string>;
 }
 export const DEMO_CARD: CardData = {
     id: 'visitor-001', type: 'npc', name: '陌生旅人',
+    descriptions: '一位远道而来的旅人。\n似乎正在寻求帮助。',
     demandSymbols: ['alpha_1', 'alpha_flower', 'alpha_fire'],
+    translations: {},
 };
