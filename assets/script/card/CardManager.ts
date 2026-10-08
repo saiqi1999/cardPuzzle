@@ -15,6 +15,9 @@ export class CardManager extends Component {
     @property
     public duration = 0.5;
 
+    @property
+    public xratio = 0.25;
+
     private card: Node | null = null;
 
     public createCard(art: CardArt, data: CardData): Node | null {
@@ -45,7 +48,7 @@ export class CardManager extends Component {
 
         const cardWidth = card.getComponent(UITransform)!.width;
         const startX = board.width / 2 + cardWidth / 2;
-        const targetX = board.width / 4;
+        const targetX = board.width * this.xratio;
         card.setPosition(startX, 0);
         tween(card).to(this.duration, { position: new Vec3(targetX, 0, 0) }, { easing: 'quadOut' })
             .call(() => {

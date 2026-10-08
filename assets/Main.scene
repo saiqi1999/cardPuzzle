@@ -52,7 +52,7 @@
     },
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 16
+      "__id__": 17
     },
     "_id": "3039098e-a58f-4233-959e-ceaf3b699143"
   },
@@ -81,9 +81,6 @@
     "_active": true,
     "_components": [
       {
-        "__id__": 12
-      },
-      {
         "__id__": 13
       },
       {
@@ -91,6 +88,9 @@
       },
       {
         "__id__": 15
+      },
+      {
+        "__id__": 16
       }
     ],
     "_prefab": null,
@@ -396,7 +396,7 @@
         "__id__": 11
       },
       {
-        "__id__": 25
+        "__id__": 12
       }
     ],
     "_prefab": null,
@@ -450,6 +450,20 @@
       "y": 0.5
     },
     "_id": "57J2RuXklOT7s3mqOgtyr3"
+  },
+  {
+    "__type__": "831c5E3qP1MTYyg/rOSKTox",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 10
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "duration": 1.5,
+    "xratio": 0.4,
+    "_id": "16c9f54d-676c-4707-bbe7-36625ea5d056"
   },
   {
     "__type__": "cc.UITransform",
@@ -530,7 +544,7 @@
     "_enabled": true,
     "__prefab": null,
     "cardManager": {
-      "__id__": 25
+      "__id__": 12
     },
     "background": {
       "__uuid__": "0ee0a7bd-684f-4373-9c63-b8e80b0c5b44@f9941",
@@ -567,28 +581,28 @@
   {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 17
-    },
-    "shadows": {
       "__id__": 18
     },
-    "_skybox": {
+    "shadows": {
       "__id__": 19
     },
-    "fog": {
+    "_skybox": {
       "__id__": 20
     },
-    "octree": {
+    "fog": {
       "__id__": 21
     },
-    "skin": {
+    "octree": {
       "__id__": 22
     },
-    "lightProbeInfo": {
+    "skin": {
       "__id__": 23
     },
-    "postSettings": {
+    "lightProbeInfo": {
       "__id__": 24
+    },
+    "postSettings": {
+      "__id__": 25
     },
     "bakedWithStationaryMainLight": false,
     "bakedWithHighpLightmap": false
@@ -739,18 +753,5 @@
   {
     "__type__": "cc.PostSettingsInfo",
     "_toneMappingType": 0
-  },
-  {
-    "__type__": "831c5E3qP1MTYyg/rOSKTox",
-    "_name": "",
-    "_objFlags": 0,
-    "__editorExtras__": {},
-    "node": {
-      "__id__": 10
-    },
-    "_enabled": true,
-    "__prefab": null,
-    "duration": 0.5,
-    "_id": "16c9f54d-676c-4707-bbe7-36625ea5d056"
   }
 ]
