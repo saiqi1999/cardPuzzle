@@ -12,16 +12,16 @@ import { CardData } from './CardData';
 const { ccclass } = _decorator;
 
 // 唯一默认像素尺寸；Main 不再重复指定卡牌宽高。
-export const CARD_SIZE = { width: 250, height: 350 } as const;
+export const CARD_SIZE = { width: 70, height: 110 } as const;
 // 0.5 = 50%。位置以卡牌中心为原点，x 向右、y 向上。
 // x / width 相对卡宽，y / height 相对卡高；字体与正方形图标相对卡宽。
 export const CARD_LAYOUT = {
     portrait: { width: 0.792, height: 0.45143, x: 0, y: 0.19429 },
-    name: { width: 0.76, height: 0.08, x: 0, y: -0.14857, font: 0.076 },
+    name: { width: 0.76, height: 0.08, x: 0, y: -0.13857, font: 0.076 },
     badge: { size: 0.096, x: -0.348, y: 0.40571 },
     demand: { y: -0.28571, width: 0.76 },
     translation: { width: 0.76, height: 0.07429, x: 0, y: -0.4, font: 0.064 },
-    bubble: { size: 0.64, centerY: 0.7, symbolY: 0.09375, rowWidth: 0.8 },
+    bubble: { size: 1.64, centerY: 0.7, symbolY: 0.09375, rowWidth: 0.8 },
     // bubble.symbolY 和 rowWidth 相对气泡自身尺寸，其余比例相对卡牌。
     symbols: { size: 0.128, compactSize: 0.064, gap: 0.032, compactAbove: 4 },
 } as const;
