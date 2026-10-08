@@ -79,6 +79,9 @@
       },
       {
         "__id__": 7
+      },
+      {
+        "__id__": 17
       }
     ],
     "_prefab": null,
@@ -445,5 +448,47 @@
   {
     "__type__": "cc.PostSettingsInfo",
     "_toneMappingType": 0
+  },
+  {
+    "__type__": "a2286szVVFGr4mH/Zr9jatJ",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 2
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "background": {
+      "__uuid__": "0ee0a7bd-684f-4373-9c63-b8e80b0c5b44@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "portrait": {
+      "__uuid__": "cae6c562-d632-44a8-8230-401d47e7e296@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "badge": {
+      "__uuid__": "c24cee8f-6768-487d-a375-f965d38bf160@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "bubble": {
+      "__uuid__": "e4d36da5-19af-4dcf-b182-9f3d55f24abb@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "symbols": [
+      {
+        "__uuid__": "f356afc5-f5a5-4bd0-89c3-822873cff96c@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      },
+      {
+        "__uuid__": "364d8190-a1a1-4c92-80b4-49c05e3ac789@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      },
+      {
+        "__uuid__": "fa9b61ae-5f02-4a13-93d9-bbd57c615071@f9941",
+        "__expectedType__": "cc.SpriteFrame"
+      }
+    ],
+    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47"
   }
 ]
