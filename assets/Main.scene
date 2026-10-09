@@ -610,10 +610,10 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "duration": 2.5,
-    "_id": "16c9f54d-676c-4707-bbe7-36625ea5d056",
     "entranceDistance": 700,
-    "spawnInterval": 0.2
+    "duration": 2.5,
+    "spawnInterval": 0.2,
+    "_id": "16c9f54d-676c-4707-bbe7-36625ea5d056"
   },
   {
     "__type__": "cc.UITransform",
@@ -696,6 +696,7 @@
     "cardManager": {
       "__id__": 16
     },
+    "puzzleManager": null,
     "background": {
       "__uuid__": "0ee0a7bd-684f-4373-9c63-b8e80b0c5b44@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -726,28 +727,9 @@
         "__expectedType__": "cc.SpriteFrame"
       }
     ],
-    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47",
-    "puzzleManager": {
-      "__id__": 13
-    },
-    "herbImages": [
-      {
-        "__uuid__": "739867e1-cf8b-4d08-a149-31f2688476b4@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "4293c182-235c-4ae0-8d3b-f2b0c3073b6d@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      },
-      {
-        "__uuid__": "416dc5b9-df03-48af-b8e5-85793f69eb83@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      }
-    ],
-    "clueBackground": {
-      "__uuid__": "84188cc3-91d5-4daa-a9d6-041edc92d4ea@f9941",
-      "__expectedType__": "cc.SpriteFrame"
-    }
+    "herbImages": [],
+    "clueBackground": null,
+    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47"
   },
   {
     "__type__": "cc.SceneGlobals",
