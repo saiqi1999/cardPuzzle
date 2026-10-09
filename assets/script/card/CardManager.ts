@@ -2,6 +2,7 @@
  * 用途：管理本局多张卡牌的创建、入场、移除，不包含剧情判断。
  * 职责：按相对起终点移动；完成时向 EventManager 上报；支持按间隔连续生成。
  * 运行边界：挂在 CardRoot，父节点为 UI 桌面。相对坐标中心(0,0)，边缘±0.5。
+ * scatter=true 时由起点随机向外散开；终点沿射线截到桌面内部，保持方向和卡牌完整可见。
  * Inspector 只有入场距离(UI单位)、移动时间(秒)、生成间隔(秒)；未指定起点时随机方位。
  * 禁用即取消排队及入场动画，现有卡恢复拖动，但不伪造到达事件；销毁时清理所有卡。
  */
@@ -11,7 +12,9 @@ import { CardArt, CardView } from './CardView';
 import { CardDrag } from './CardDrag';
 import { EventManager } from '../EventManager';
 const { ccclass, property } = _decorator;
-export interface CardSpawnOptions { from?: { x: number; y: number }; to?: { x: number; y: number }; }
+// 中心散开使用入场距离的此比例，仍共用原有三个 Inspector 配置。
+export const SCATTER_DISTANCE_RATIO = 0.3;
+export interface CardSpawnOptions { from?: { x: number; y: number }; to?: { x: number; y: number }; scatter?: boolean; }
 export interface CardSpawnRequest { art: CardArt; data: CardData; options?: CardSpawnOptions; }
 @ccclass('CardManager')
 export class CardManager extends Component {
@@ -40,6 +43,21 @@ export class CardManager extends Component {
         const angle = Math.random() * Math.PI * 2;
         const begin = options.from ? new Vec3(options.from.x * root.width, options.from.y * root.height, 0)
             : new Vec3(end.x + Math.cos(angle) * this.entranceDistance, end.y + Math.sin(angle) * this.entranceDistance, 0);
+        if (options.scatter) {
+            // 每张卡生成时独立抽取方向，不在批量创建请求时共用一个随机终点。
+            const size = card.getComponent(UITransform)!;
+            const limitX = Math.max(0, (root.width - size.width) / 2);
+            const limitY = Math.max(0, (root.height - size.height) / 2);
+            begin.x = Math.max(-limitX, Math.min(limitX, begin.x));
+            begin.y = Math.max(-limitY, Math.min(limitY, begin.y));
+            const dx = Math.cos(angle), dy = Math.sin(angle);
+            let distance = this.entranceDistance * SCATTER_DISTANCE_RATIO;
+            if (dx > 0) distance = Math.min(distance, (limitX - begin.x) / dx);
+            else if (dx < 0) distance = Math.min(distance, (-limitX - begin.x) / dx);
+            if (dy > 0) distance = Math.min(distance, (limitY - begin.y) / dy);
+            else if (dy < 0) distance = Math.min(distance, (-limitY - begin.y) / dy);
+            end.x = begin.x + dx * distance; end.y = begin.y + dy * distance;
+        }
         card.setPosition(begin);
         const complete = () => {
             if (!card.isValid || this.cards.get(data.id) !== card) return;

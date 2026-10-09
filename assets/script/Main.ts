@@ -31,7 +31,7 @@ export class Main extends Component {
         if (!this.puzzleManager.ensureReady()) return;
         const art: CardArt = { background: this.background, portrait: this.portrait, badge: this.badge, bubble: this.bubble,
             symbols: { alpha_1: this.symbols[0], alpha_flower: this.symbols[1], alpha_fire: this.symbols[2] } };
-        const center = { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
+        const center = { from: { x: 0, y: 0 }, scatter: true };
         const requests: CardSpawnRequest[] = HERB_CARDS.map((data, i) => ({ data,
             art: { ...art, portrait: this.herbImages[i] }, options: center }));
         requests.push(...CLUE_CARDS.map(data => ({ data, art: { ...art, background: this.clueBackground }, options: center })));
