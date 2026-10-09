@@ -8,7 +8,7 @@ import { _decorator, Component, Node, UITransform, Sprite, SpriteFrame, Label, C
 import { PuzzleData } from './PuzzleData';
 const { ccclass } = _decorator;
 export const PUZZLE_LAYOUT = {
-    width: 560, aspect: 112 / 77, screenWidth: 0.9, screenHeight: 0.8,
+    width: 760, aspect: 112 / 77, screenWidth: 0.9, screenHeight: 0.8,
     image: { x: -0.30, y: 0.20, width: 0.27, height: 0.40 },
     title: { x: 0.17, y: 0.29, width: 0.52, height: 0.26, font: 0.039 },
     symbol: { size: 0.05, step: 0.057 },
