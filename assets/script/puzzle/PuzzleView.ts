@@ -52,14 +52,14 @@ export class PuzzleView extends Component {
         const symbols = this.box(title, 'AlchemySymbols', (data.symbols.length + 2) * step,
             width * l.symbol.size, left + nameWidth + (data.symbols.length + 2) * step / 2, 0);
         const half = (data.symbols.length + 1) * step / 2;
-        this.text(symbols, 'LeftParenthesis', '（', step, width * l.symbol.size, -half, 0, font);
+        if (data.symbols.length) this.text(symbols, 'LeftParenthesis', '（', step, width * l.symbol.size, -half, 0, font);
         data.symbols.forEach((id, i) => {
             const frame = art.symbols[id];
             const x = (i - (data.symbols.length - 1) / 2) * step;
             if (frame) this.picture(symbols, id, frame, width * l.symbol.size, width * l.symbol.size, x, 0);
             else this.text(symbols, id, '？', step, width * l.symbol.size, x, 0, font);
         });
-        this.text(symbols, 'RightParenthesis', '）', step, width * l.symbol.size, half, 0, font);
+        if (data.symbols.length) this.text(symbols, 'RightParenthesis', '）', step, width * l.symbol.size, half, 0, font);
         this.text(this.node, 'Description', data.description, width * l.description.width, h * l.description.height,
             width * l.description.x, h * l.description.y, width * l.description.font);
         this.quitNode = this.box(this.node, 'Quit', width * l.quit.size, width * l.quit.size,

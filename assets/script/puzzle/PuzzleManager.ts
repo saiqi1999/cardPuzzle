@@ -28,7 +28,7 @@ export class PuzzleManager extends Component {
     @property(SpriteFrame) bookButton: SpriteFrame = null!;
     @property(SpriteFrame) background: SpriteFrame = null!;
     @property([SpriteFrame]) symbols: SpriteFrame[] = [];
-    public puzzles: PuzzleData[] = INITIAL_PUZZLES;
+    public puzzles: PuzzleData[] = INITIAL_PUZZLES.map(page => ({ ...page, symbols: [...page.symbols] }));
     private page!: Node;
     private blocker!: Node;
     private view!: PuzzleView;
@@ -41,9 +41,11 @@ export class PuzzleManager extends Component {
     private boardWidth = 0;
     private boardHeight = 0;
 
-    protected start(): void {
+    protected start(): void { this.ensureReady(); }
+    public ensureReady(): boolean {
+        if (this.page) return true;
         if (!this.bookButton || !this.background || this.symbols.length < 3 || !this.node.parent?.getComponent(UITransform)) {
-            error('PuzzleManager: 需要 Canvas 父节点、书本按钮、书页背景和三个符号'); return;
+            error('PuzzleManager: 需要 Canvas 父节点、书本按钮、书页背景和三个符号'); return false;
         }
         this.art = { background: this.background, images: {},
             symbols: { alpha_1: this.symbols[0], alpha_flower: this.symbols[1], alpha_fire: this.symbols[2] } };
@@ -60,11 +62,24 @@ export class PuzzleManager extends Component {
         this.buttonView.initialize(this.bookButton, BOOK_BUTTON);
         this.button.addComponent(ButtonClick).bind(() => this.open());
         this.resize();
+        return true;
     }
     protected onEnable(): void { input.on(Input.EventType.KEY_DOWN, this.keyDown, this); }
     protected onDisable(): void {
         input.off(Input.EventType.KEY_DOWN, this.keyDown, this);
         if (this.page) this.close();
+    }
+    /** 本局内存收录，以页 ID 去重，不写入本地存档。 */
+    public collectPage(page: PuzzleData): boolean {
+        if (!this.ensureReady()) return false;
+        if (!this.puzzles.some(item => item.id === page.id)) this.puzzles.push({ ...page, symbols: [...page.symbols] });
+        return true;
+    }
+    public openPage(id: string): void {
+        if (!this.ensureReady()) return;
+        const index = this.puzzles.findIndex(page => page.id === id);
+        if (index < 0) return;
+        this.index = index; this.render(); this.open();
     }
     public open(): void {
         if (!this.page || !this.puzzles.length) return;

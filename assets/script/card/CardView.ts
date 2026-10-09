@@ -10,6 +10,7 @@
  */
 import { _decorator, Component, Node, UITransform, Sprite, SpriteFrame, Label, Color, Mask, Layers } from 'cc';
 import { CardData } from './CardData';
+import { EventManager } from '../EventManager';
 import { SpeechBubble } from '../util/SpeechBubble';
 const { ccclass } = _decorator;
 
@@ -17,6 +18,10 @@ const { ccclass } = _decorator;
 export const CARD_SIZE = { width: 70, height: 110 } as const;
 // 0.5 = 50%。位置以卡牌中心为原点，x 向右、y 向上。
 // x / width 相对卡宽，y / height 相对卡高；字体与正方形图标相对卡宽。
+export const CLUE_LAYOUT = {
+    title: { width: 0.84, height: 0.2, y: 0.25, font: 0.11 },
+    description: { width: 0.82, height: 0.45, y: -0.08, font: 0.085 },
+} as const;
 export const CARD_LAYOUT = {
     portrait: { width: 0.792, height: 0.45143, x: 0, y: 0.19429 },
     name: { width: 0.76, height: 0.08, x: 0, y: -0.13857, font: 0.076 },
@@ -70,7 +75,9 @@ export class CardView extends Component {
     }
     public initialize(art: CardArt, data: CardData): void {
         this.art = art;
-        this.setSize(this.width, this.height);
+        if (data.type === 'clue') {
+            this.setSize(CARD_SIZE.height, CARD_SIZE.height * art.background.originalSize.height / art.background.originalSize.width);
+        } else this.setSize(this.width, this.height);
         this.setData(data);
     }
     public setData(data: CardData): void {
@@ -78,15 +85,23 @@ export class CardView extends Component {
         if (!this.art) return;
         const speechVisible = this.bubble?.active ?? false;
         for (const child of [...this.node.children]) { child.removeFromParent(); child.destroy(); }
+        this.bubble = null;
         const art = this.art;
         const w = this.width, h = this.height;
         const { portrait, name, badge, descriptions } = CARD_LAYOUT;
         this.picture(this.node, 'Background', art.background, w, h, 0, 0);
+        if (data.type === 'clue') {
+            const { title, description } = CLUE_LAYOUT;
+            this.label(this.node, 'NameLabel', data.name, w * title.width, h * title.height, 0, h * title.y, w * title.font);
+            this.label(this.node, 'DescriptionsLabel', data.descriptions, w * description.width, h * description.height, 0, h * description.y, w * description.font);
+            return;
+        }
         const mask = this.box(this.node, 'PortraitMask', w * portrait.width, h * portrait.height,
             w * portrait.x, h * portrait.y);
         mask.addComponent(Mask);
         const ratio = art.portrait.originalSize.width / art.portrait.originalSize.height;
-        const portraitWidth = Math.max(w * portrait.width, h * portrait.height * ratio);
+        const portraitWidth = data.type === 'npc' ? Math.max(w * portrait.width, h * portrait.height * ratio)
+            : Math.min(w * portrait.width, h * portrait.height * ratio);
         this.picture(mask, 'Portrait', art.portrait, portraitWidth, portraitWidth / ratio, 0, 0);
         this.label(this.node, 'NameLabel', data.name, w * name.width, h * name.height,
             w * name.x, h * name.y, w * name.font);
@@ -95,13 +110,17 @@ export class CardView extends Component {
         this.label(this.node, 'DescriptionsLabel', data.descriptions,
             w * descriptions.width, h * descriptions.height, w * descriptions.x,
             h * descriptions.y, w * descriptions.font);
-        this.createSpeech(data);
-        this.bubble.active = speechVisible;
+        if (data.type === 'npc') { this.createSpeech(data); this.bubble!.active = speechVisible; }
     }
     public setHovered(value: boolean): void {
         this.hovered = value;
         const scale = value ? CARD_STYLE.hoverScale : 1;
         this.node.setScale(scale, scale, 1);
+    }
+    public handleClick(): void {
+        if (!this.data) return;
+        if (this.data.type === 'npc') this.toggleSpeech();
+        EventManager.instance?.onCardEvent('clicked', this.data);
     }
     public toggleSpeech(): void { if (this.bubble) this.bubble.active = !this.bubble.active; }
     private createSpeech(data: CardData): void {

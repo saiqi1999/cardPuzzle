@@ -51,7 +51,7 @@ export class CardDrag extends Component {
         if (event.getID() !== this.touchId) return;
         const click = !this.moved && Vec2.distance(this.startPoint, event.getUILocation()) <= DRAG_THRESHOLD;
         this.touchId = null; this.view.setHovered(false); this.clamp();
-        if (click) this.view.toggleSpeech(); event.propagationStopped = true;
+        if (click) this.view.handleClick(); event.propagationStopped = true;
     }
     private cancelDrag(event: EventTouch): void {
         if (event.getID() !== this.touchId) return;
