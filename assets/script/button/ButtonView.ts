@@ -24,7 +24,7 @@ export class ButtonView extends Component {
         if (!this.data) return;
         const parent = this.node.parent!.getComponent(UITransform)!;
         this.node.setPosition((1 - parent.anchorX) * parent.width - this.data.margin - this.data.width / 2,
-            -parent.anchorY * parent.height + this.data.margin + this.data.height / 2);
+            parent.anchorY * parent.height - this.data.margin - this.data.height / 2);
     }
     private enter(): void { if (this.icon) this.icon.setScale(this.data.hoverScale, this.data.hoverScale, 1); }
     private leave(): void { this.icon?.setScale(1, 1, 1); }

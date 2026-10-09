@@ -16,7 +16,7 @@ export class CardManager extends Component {
     public duration = 0.5;
 
     @property
-    public xratio = 0.25;
+    public xratio = 0.65;
 
     private card: Node | null = null;
 
