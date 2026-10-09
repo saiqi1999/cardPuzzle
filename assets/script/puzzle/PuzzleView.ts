@@ -15,7 +15,6 @@ export const PUZZLE_LAYOUT = {
     description: { x: 0, y: -0.20, width: 0.83, height: 0.34, font: 0.033 },
     quit: { x: 0.45, y: 0.423, size: 0.09 },
     footer: { y: -0.43, width: 0.8, height: 0.06, font: 0.024 },
-    tab: { y: 0.45, width: 0.70, height: 0.07, font: 0.025 },
     lineHeightRatio: 1.3,
     color: { r: 65, g: 42, b: 34 },
 } as const;
@@ -27,7 +26,6 @@ export interface PuzzleArt {
 @ccclass('PuzzleView')
 export class PuzzleView extends Component {
     public quitNode!: Node;
-    private tab!: Node;
     public render(data: PuzzleData, art: PuzzleArt, width: number, index: number, count: number): void {
         for (const child of [...this.node.children]) { child.removeFromParent(); child.destroy(); }
         const h = width / PUZZLE_LAYOUT.aspect, l = PUZZLE_LAYOUT;
@@ -68,10 +66,8 @@ export class PuzzleView extends Component {
             width * l.quit.x, h * l.quit.y); // 使用背景图已有的 X，透明热区扩大点击范围。
         this.text(this.node, 'PageNumber', `A ←   ${index + 1} / ${count}   → D`, width * l.footer.width,
             h * l.footer.height, 0, h * l.footer.y, width * l.footer.font);
-        this.tab = this.text(this.node, 'OpenHint', '解密手册 · 点击展开', width * l.tab.width,
-            h * l.tab.height, 0, h * l.tab.y, width * l.tab.font).node;
+
     }
-    public setExpanded(expanded: boolean): void { this.tab.active = !expanded; this.quitNode.active = expanded; }
     private box(parent: Node, name: string, w: number, h: number, x: number, y: number): Node {
         const node = new Node(name); node.layer = Layers.Enum.UI_2D;
         node.addComponent(UITransform).setContentSize(w, h); parent.addChild(node); node.setPosition(x, y); return node;

@@ -379,7 +379,11 @@
         "__expectedType__": "cc.SpriteFrame"
       }
     ],
-    "_id": "9dZvVynC1K3LetFto0j+1O"
+    "_id": "9dZvVynC1K3LetFto0j+1O",
+    "bookButton": {
+      "__uuid__": "cb37967c-a6ff-4cab-bf0a-e66e4324be12@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    }
   },
   {
     "__type__": "cc.Node",
