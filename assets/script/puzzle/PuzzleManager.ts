@@ -1,12 +1,12 @@
 /**
  * 用途：统一管理解密手册列表、当前页和展开状态，作为书页系统入口。
- * 职责：创建页面/输入遮挡节点；A/D 循环翻页；书本按钮打开全屏手册，退出隐藏。
+ * 职责：创建页面/输入遮挡节点；A/D 循环翻页；书本按钮从中心缩放打开手册，半透明遮罩拦截输入，退出隐藏。
  * 运行边界：挂在 Canvas 的 PuzzleRoot 子节点，所有生成节点归该节点所有。
  * Inspector 绑定背景与符号；初版静态三页、图片留空，不自动解锁或确认人物词义。
- * 仅展开时响应 A/D；Esc 退出并记忆页码；禁用时清除键盘监听和模态遮挡。
+ * 仅展开时响应 A/D；Esc 退出并记忆页码；禁用时停止缩放动画并清除键盘监听和模态遮挡。
  */
 import { _decorator, Component, Node, SpriteFrame, UITransform, Layers, BlockInputEvents,
-    input, Input, EventKeyboard, KeyCode, Graphics, Color, error } from 'cc';
+    input, Input, EventKeyboard, KeyCode, Graphics, Color, tween, Tween, Vec3, error } from 'cc';
 import { PuzzleData } from './PuzzleData';
 import { PuzzleView, PUZZLE_LAYOUT, PuzzleArt } from './PuzzleView';
 import { PuzzleClick } from './PuzzleClick';
@@ -14,7 +14,9 @@ import { BOOK_BUTTON } from '../button/ButtonData';
 import { ButtonView } from '../button/ButtonView';
 import { ButtonClick } from '../button/ButtonClick';
 const { ccclass, property } = _decorator;
-export const HANDBOOK_STYLE = { r: 38, g: 30, b: 25 } as const;
+// alpha: 0 完全透明，255 完全不透明；只作用于遮罩，书页保持不透明。
+export const HANDBOOK_STYLE = { r: 38, g: 30, b: 25, alpha: 128 } as const;
+export const HANDBOOK_ANIMATION = { startScale: 0.08, duration: 0.25 } as const;
 export const INITIAL_PUZZLES: PuzzleData[] = [
     { id: 'fire-flower', title: '火焰花', symbols: ['alpha_fire', 'alpha_flower'],
         description: '花瓣像火焰一样温热。\n炼金笔记：火焰与花的符号组合，表示火焰花。' },
@@ -82,13 +84,20 @@ export class PuzzleManager extends Component {
         this.index = index; this.render(); this.open();
     }
     public open(): void {
-        if (!this.page || !this.puzzles.length) return;
+        if (!this.page || !this.puzzles.length || this.expanded) return;
+        Tween.stopAllByTarget(this.page);
         this.expanded = true;
         this.node.setSiblingIndex(this.node.parent!.children.length - 1);
         this.blocker.active = true; this.page.active = true; this.button.active = false;
+        this.page.setPosition(0, 0);
+        this.page.setScale(HANDBOOK_ANIMATION.startScale, HANDBOOK_ANIMATION.startScale, 1);
+        tween(this.page).to(HANDBOOK_ANIMATION.duration, { scale: new Vec3(1, 1, 1) },
+            { easing: 'quadOut' }).start();
     }
     public close(): void {
         if (!this.page) return;
+        Tween.stopAllByTarget(this.page);
+        this.page.setScale(1, 1, 1);
         this.expanded = false;
         this.page.active = false; this.blocker.active = false; this.button.active = true;
     }
@@ -115,7 +124,7 @@ export class PuzzleManager extends Component {
         this.blocker.getComponent(UITransform)!.setContentSize(board.width, board.height);
         const graphics = this.blocker.getComponent(Graphics)!;
         graphics.clear();
-        graphics.fillColor = new Color(HANDBOOK_STYLE.r, HANDBOOK_STYLE.g, HANDBOOK_STYLE.b, 255);
+        graphics.fillColor = new Color(HANDBOOK_STYLE.r, HANDBOOK_STYLE.g, HANDBOOK_STYLE.b, HANDBOOK_STYLE.alpha);
         graphics.rect(-board.width / 2, -board.height / 2, board.width, board.height); graphics.fill();
         this.render();
         this.page.setPosition(0, 0);
