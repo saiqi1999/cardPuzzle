@@ -330,7 +330,7 @@
     "_priority": 0,
     "_fov": 45,
     "_fovAxis": 0,
-    "_orthoHeight": 358.776,
+    "_orthoHeight": 495.39149888143174,
     "_near": 0,
     "_far": 2000,
     "_color": {
@@ -811,6 +811,18 @@
     "puzzleManager": {
       "__id__": 13
     },
+    "cardPackImage": {
+      "__uuid__": "005e635e-cac3-4a01-b87a-a6bdda451dce@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "boxImage": {
+      "__uuid__": "7058a800-42b4-4871-b60e-c13d66998737@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "tooltipBackground": {
+      "__uuid__": "e1459829-e33c-40ed-8437-8480a764fc83@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
     "background": {
       "__uuid__": "653922c9-74a4-4419-b317-1d629e1404ac@f9941",
       "__expectedType__": "cc.SpriteFrame"
@@ -859,11 +871,7 @@
       "__uuid__": "84188cc3-91d5-4daa-a9d6-041edc92d4ea@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
-    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47",
-    "tooltipBackground": {
-      "__uuid__": "e1459829-e33c-40ed-8437-8480a764fc83@f9941",
-      "__expectedType__": "cc.SpriteFrame"
-    }
+    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47"
   },
   {
     "__type__": "cc.SceneGlobals",
