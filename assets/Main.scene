@@ -863,14 +863,6 @@
     "tooltipBackground": {
       "__uuid__": "e1459829-e33c-40ed-8437-8480a764fc83@f9941",
       "__expectedType__": "cc.SpriteFrame"
-    },
-    "cardPackImage": {
-      "__uuid__": "69f4c12d-4097-400c-abd2-941237a46215@f9941",
-      "__expectedType__": "cc.SpriteFrame"
-    },
-    "boxImage": {
-      "__uuid__": "7058a800-42b4-4871-b60e-c13d66998737@f9941",
-      "__expectedType__": "cc.SpriteFrame"
     }
   },
   {
