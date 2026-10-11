@@ -50,7 +50,7 @@ export const CARD_STYLE = {
 export const CARD_SHADOW = {
     widthRatio: 1,
     heightRatio: 0.04,
-    raisedHeightRatio: 0.06, // 抬起后向下增厚；顶边锚点固定，因此中心随高度自然下移。
+    flatScaleY: 1.00, hoverScaleY: 1.03, dragScaleY: 1.06, // 相对平放厚度；拖拽优先
     overlapRatio: 0.01, // 阴影顶边藏入卡面少许，避免底边出现缝隙。
     opacity: 150,
     capPixels: 2,
@@ -68,6 +68,7 @@ export class CardView extends Component {
     private shadow: Node | null = null;
     private dragging = false;
     private lift = 0;
+    private shadowScaleY: number = CARD_SHADOW.flatScaleY;
     private bubble: Node | null = null;
     private art: CardArt | null = null;
     private data: CardData | null = null;
@@ -124,16 +125,22 @@ export class CardView extends Component {
         if (this.bubble) Tooltip.hide(this.bubble);
     }
     protected onDisable(): void {
-        this.hideTooltip(); this.dragging = false; this.hovered = false; this.lift = 0; this.node.setScale(1, 1, 1); this.updateShadow();
+        this.hideTooltip(); this.dragging = false; this.hovered = false; this.lift = 0; this.shadowScaleY = CARD_SHADOW.flatScaleY; this.node.setScale(1, 1, 1); this.updateShadow();
     }
     /** CardDrag 只上报拖起/落下，阴影尺寸和过渡仍由 CardView 管理。 */
     public setDragging(value: boolean): void { this.dragging = value; }
     protected update(dt: number): void {
         const target = this.dragging || this.hovered ? 1 : 0;
-        if (this.lift === target) return;
+        const shadowTarget = this.dragging ? CARD_SHADOW.dragScaleY
+            : this.hovered ? CARD_SHADOW.hoverScaleY : CARD_SHADOW.flatScaleY;
+        if (this.lift === target && this.shadowScaleY === shadowTarget) return;
         const step = Math.max(0, dt) / CARD_STYLE.hoverDuration;
         this.lift = target > this.lift ? Math.min(target, this.lift + step) : Math.max(target, this.lift - step);
-        // 卡牌缩放与阴影增厚共用 lift；阴影顶边固定，向下延伸而不脱离卡牌。
+        const shadowStep = step * (CARD_SHADOW.dragScaleY - CARD_SHADOW.flatScaleY);
+        this.shadowScaleY = shadowTarget > this.shadowScaleY
+            ? Math.min(shadowTarget, this.shadowScaleY + shadowStep)
+            : Math.max(shadowTarget, this.shadowScaleY - shadowStep);
+        // 保留原卡牌缩放和阴影定位，仅将阴影厚度拆为平放/悬停/拖拽三档。
         const scale = 1 + (CARD_STYLE.hoverScale - 1) * this.lift;
         this.node.setScale(scale, scale, 1);
         this.updateShadow();
@@ -159,7 +166,7 @@ export class CardView extends Component {
         const s = CARD_SHADOW;
         this.shadow.getComponent(UITransform)!.setContentSize(
             this.width * s.widthRatio,
-            this.width * (s.heightRatio + (s.raisedHeightRatio - s.heightRatio) * this.lift));
+            this.width * s.heightRatio * this.shadowScaleY);
         this.shadow.setPosition(0, -this.height / 2 + this.width * s.overlapRatio);
         this.shadow.getComponent(Sprite)!.color = new Color(0, 0, 0, s.opacity);
     }
