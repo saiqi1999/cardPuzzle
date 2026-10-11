@@ -50,6 +50,7 @@ export const CARD_STYLE = {
 export const CARD_SHADOW = {
     widthRatio: 1,
     heightRatio: 0.04,
+    raisedHeightRatio: 0.10, // 抬起后向下增厚；顶边锚点固定，因此中心随高度自然下移。
     overlapRatio: 0.01, // 阴影顶边藏入卡面少许，避免底边出现缝隙。
     opacity: 150,
     capPixels: 2,
@@ -132,9 +133,10 @@ export class CardView extends Component {
         if (this.lift === target) return;
         const step = Math.max(0, dt) / CARD_STYLE.hoverDuration;
         this.lift = target > this.lift ? Math.min(target, this.lift + step) : Math.max(target, this.lift - step);
-        // 阴影是根节点子节点，只随根节点缩放，不再额外放大或下移。
+        // 卡牌缩放与阴影增厚共用 lift；阴影顶边固定，向下延伸而不脱离卡牌。
         const scale = 1 + (CARD_STYLE.hoverScale - 1) * this.lift;
         this.node.setScale(scale, scale, 1);
+        this.updateShadow();
     }
     private createShadow(): void {
         // 只释放自建 SpriteFrame，不销毁 Main 所引用的源图或纹理。
@@ -156,7 +158,8 @@ export class CardView extends Component {
         if (!this.shadow) return;
         const s = CARD_SHADOW;
         this.shadow.getComponent(UITransform)!.setContentSize(
-            this.width * s.widthRatio, this.width * s.heightRatio);
+            this.width * s.widthRatio,
+            this.width * (s.heightRatio + (s.raisedHeightRatio - s.heightRatio) * this.lift));
         this.shadow.setPosition(0, -this.height / 2 + this.width * s.overlapRatio);
         this.shadow.getComponent(Sprite)!.color = new Color(0, 0, 0, s.opacity);
     }
