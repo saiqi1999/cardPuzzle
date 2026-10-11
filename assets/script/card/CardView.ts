@@ -4,12 +4,12 @@
  * 运行边界：挂在带 UITransform 的卡牌根节点上；父节点须为 UI 桌面。
  * 本脚本独占根节点子节点（刷新时重建），不要手动在其下添加持久节点。
  * 卡根节点须中心锚点、无旋转，缩放由本脚本管理；不处理拖动、配方和解谜判定。
- * 阴影：共享运行时柔边纹理，以九宫格绘制在卡面后、画像 Mask 外；无额外资源绑定。
+ * 阴影：使用 Main 传入的 shadowbar 图片，以九宫格绘制在卡牌底边、画像 Mask 外。
  * 调整入口：CARD_SHADOW 控制阴影，其余为 文件顶部 CARD_SIZE / CARD_LAYOUT / CARD_STYLE / BUBBLE_LAYOUT；运行时调用 setSize。
  * 气泡保持在卡牌上方且尾尖向下；不做屏幕避让，靠近桌面顶边可能超出视野。
  * 宽高比例可改变，但底图会随之拉伸；画像保持比例裁切，符号保持正方形。
  */
-import { _decorator, Component, Node, UITransform, Sprite, SpriteFrame, Label, Color, Mask, Layers, Texture2D } from 'cc';
+import { _decorator, Component, Node, UITransform, Sprite, SpriteFrame, Label, Color, Mask, Layers } from 'cc';
 import { CardData } from './CardData';
 import { EventManager } from '../EventManager';
 import { Tooltip } from '../util/Tooltip';
@@ -44,27 +44,25 @@ export const CARD_STYLE = {
     untranslated: '未破译',
 } as const;
 
-// 尺寸/偏移相对卡宽；opacity 为 0~255。纹理仅生成一次，最后一张卡销毁时释放。
+// 宽度相对卡宽，厚度与底边偏移也相对卡宽；透明度为 0~255。
+// 72×2 的 shadowbar 两端各保留 2 像素，仅拉伸中部；图片本身保持不变。
 export const CARD_SHADOW = {
-    textureSize: 64, textureMargin: 16, textureRadius: 8, textureSoftness: 12,
-    opacity: 66, dragOpacity: 54,
-    spread: 0.055, dragSpread: 0.11,
-    offsetX: 0.035, offsetY: -0.045,
-    dragOffsetX: 0.075, dragOffsetY: -0.11,
-    transitionSeconds: 0.12,
+    widthRatio: 0.96, raisedWidthRatio: 1.16,
+    heightRatio: 0.04, raisedHeightRatio: 0.05,
+    offsetY: 0.01, raisedOffsetY: 0.055,
+    opacity: 150, raisedOpacity: 125,
+    capPixels: 2, transitionSeconds: 0.12,
 } as const;
 
 export interface CardArt {
     background: SpriteFrame; portrait: SpriteFrame; badge: SpriteFrame;
     tooltip?: SpriteFrame;
+    shadow?: SpriteFrame;
     bubble: SpriteFrame; symbols: Record<string, SpriteFrame>;
 }
 @ccclass('CardView')
 export class CardView extends Component {
-    private static shadowTexture: Texture2D | null = null;
-    private static shadowFrame: SpriteFrame | null = null;
-    private static shadowUsers = 0;
-    private ownsShadow = false;
+    private shadowFrame: SpriteFrame | null = null;
     private shadow: Node | null = null;
     private dragging = false;
     private lift = 0;
@@ -126,62 +124,43 @@ export class CardView extends Component {
         if (this.bubble) Tooltip.hide(this.bubble);
     }
     protected onDisable(): void {
-        this.hideTooltip(); this.dragging = false; this.lift = 0; this.updateShadow();
+        this.hideTooltip(); this.dragging = false; this.hovered = false; this.lift = 0; this.updateShadow();
     }
     /** CardDrag 只上报拖起/落下，阴影尺寸和过渡仍由 CardView 管理。 */
     public setDragging(value: boolean): void { this.dragging = value; }
     protected update(dt: number): void {
-        const target = this.dragging ? 1 : 0;
+        const target = this.dragging || this.hovered ? 1 : 0;
         if (this.lift === target) return;
         const step = Math.max(0, dt) / CARD_SHADOW.transitionSeconds;
         this.lift = target > this.lift ? Math.min(target, this.lift + step) : Math.max(target, this.lift - step);
         this.updateShadow();
     }
     private createShadow(): void {
-        if (!CardView.shadowFrame) {
-            const style = CARD_SHADOW, n = style.textureSize;
-            const pixels = new Uint8Array(n * n * 4);
-            const half = n / 2 - style.textureMargin;
-            for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-                // 圆角矩形的距离场生成柔边；透明边缘不会被九宫格拉伸成硬线。
-                const qx = Math.abs(x + 0.5 - n / 2) - half + style.textureRadius;
-                const qy = Math.abs(y + 0.5 - n / 2) - half + style.textureRadius;
-                const distance = Math.hypot(Math.max(qx, 0), Math.max(qy, 0))
-                    + Math.min(Math.max(qx, qy), 0) - style.textureRadius;
-                const t = Math.max(0, Math.min(1, (distance + style.textureSoftness) / (2 * style.textureSoftness)));
-                pixels[(y * n + x) * 4 + 3] = Math.round(255 * (1 - t * t * (3 - 2 * t)));
-            }
-            const texture = new Texture2D();
-            texture.reset({ width: n, height: n, format: Texture2D.PixelFormat.RGBA8888 });
-            texture.uploadData(pixels);
-            texture.setFilters(Texture2D.Filter.LINEAR, Texture2D.Filter.LINEAR);
-            const frame = new SpriteFrame(); frame.texture = texture; frame.packable = false;
-            const inset = style.textureMargin + style.textureRadius;
-            frame.insetLeft = frame.insetRight = frame.insetTop = frame.insetBottom = inset;
-            CardView.shadowTexture = texture; CardView.shadowFrame = frame;
-        }
-        if (!this.ownsShadow) { CardView.shadowUsers++; this.ownsShadow = true; }
-        this.shadow = this.box(this.node, 'Shadow', this.width, this.height, 0, 0);
+        // 只释放自建 SpriteFrame，不销毁 Main 所引用的源图或纹理。
+        this.shadowFrame?.destroy(); this.shadowFrame = null;
+        if (!this.art?.shadow) return;
+        const frame = this.art.shadow.clone();
+        const cap = Math.min(CARD_SHADOW.capPixels, (frame.rect.width - 1) / 2);
+        frame.insetLeft = frame.insetRight = Math.max(0, cap);
+        frame.insetTop = frame.insetBottom = 0;
+        this.shadowFrame = frame;
+        this.shadow = this.box(this.node, 'Shadow', this.width, 1, 0, 0);
         const sprite = this.shadow.addComponent(Sprite);
         sprite.type = Sprite.Type.SLICED; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
-        sprite.spriteFrame = CardView.shadowFrame;
+        sprite.spriteFrame = frame;
         this.updateShadow();
     }
     private updateShadow(): void {
         if (!this.shadow) return;
         const s = CARD_SHADOW, mix = (a: number, b: number) => a + (b - a) * this.lift;
-        const spread = this.width * mix(s.spread, s.dragSpread);
-        this.shadow.getComponent(UITransform)!.setContentSize(this.width + (s.textureMargin + spread) * 2, this.height + (s.textureMargin + spread) * 2);
-        this.shadow.setPosition(this.width * mix(s.offsetX, s.dragOffsetX), this.width * mix(s.offsetY, s.dragOffsetY));
-        this.shadow.getComponent(Sprite)!.color = new Color(0, 0, 0, Math.round(mix(s.opacity, s.dragOpacity)));
+        this.shadow.getComponent(UITransform)!.setContentSize(
+            this.width * mix(s.widthRatio, s.raisedWidthRatio),
+            this.width * mix(s.heightRatio, s.raisedHeightRatio));
+        this.shadow.setPosition(0, -this.height / 2 - this.width * mix(s.offsetY, s.raisedOffsetY));
+        this.shadow.getComponent(Sprite)!.color = new Color(0, 0, 0, Math.round(mix(s.opacity, s.raisedOpacity)));
     }
     protected onDestroy(): void {
-        if (!this.ownsShadow) return;
-        this.ownsShadow = false;
-        if (--CardView.shadowUsers === 0) {
-            CardView.shadowFrame?.destroy(); CardView.shadowTexture?.destroy();
-            CardView.shadowFrame = null; CardView.shadowTexture = null;
-        }
+        this.shadowFrame?.destroy(); this.shadowFrame = null;
     }
     public handleClick(): void {
         if (!this.data) return;

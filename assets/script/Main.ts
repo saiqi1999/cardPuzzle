@@ -17,6 +17,8 @@ export class Main extends Component {
     @property(PuzzleManager) puzzleManager: PuzzleManager = null!;
     @property(SpriteFrame) cardPackImage: SpriteFrame = null!;
     @property(SpriteFrame) boxImage: SpriteFrame = null!;
+    @property({ type: SpriteFrame, tooltip: '卡牌底边阴影：绑定 shadowbar 的 SpriteFrame；留空仅隐藏阴影' })
+    shadowImage: SpriteFrame = null!;
     @property(SpriteFrame) tooltipBackground: SpriteFrame = null!;
     @property(SpriteFrame) background: SpriteFrame = null!;
     @property(SpriteFrame) portrait: SpriteFrame = null!;
@@ -32,7 +34,7 @@ export class Main extends Component {
             error('Main: 请绑定卡牌/手册管理器、卡牌素材、三个符号、三种草药图片、线索底图、卡包与箱子图片'); return;
         }
         if (!this.puzzleManager.ensureReady()) return;
-        const art: CardArt = { tooltip: this.tooltipBackground, background: this.background, portrait: this.portrait, badge: this.badge, bubble: this.bubble,
+        const art: CardArt = { shadow: this.shadowImage, tooltip: this.tooltipBackground, background: this.background, portrait: this.portrait, badge: this.badge, bubble: this.bubble,
             symbols: { alpha_1: this.symbols[0], alpha_flower: this.symbols[1], alpha_fire: this.symbols[2] } };
         const center = { from: { x: 0, y: 0 }, scatter: true };
         const requests: CardSpawnRequest[] = HERB_CARDS.map((data, i) => ({ data,
