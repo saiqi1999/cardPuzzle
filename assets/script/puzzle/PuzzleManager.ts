@@ -7,6 +7,7 @@
  */
 import { _decorator, Component, Node, SpriteFrame, UITransform, Layers, BlockInputEvents,
     input, Input, EventKeyboard, KeyCode, Graphics, Color, tween, Tween, Vec3, error } from 'cc';
+import { Tooltip } from '../util/Tooltip';
 import { PuzzleData } from './PuzzleData';
 import { PuzzleView, PUZZLE_LAYOUT, PuzzleArt } from './PuzzleView';
 import { PuzzleClick } from './PuzzleClick';
@@ -85,6 +86,7 @@ export class PuzzleManager extends Component {
     }
     public open(): void {
         if (!this.page || !this.puzzles.length || this.expanded) return;
+        Tooltip.hideAll();
         Tween.stopAllByTarget(this.page);
         this.expanded = true;
         this.node.setSiblingIndex(this.node.parent!.children.length - 1);

@@ -10,7 +10,7 @@ export interface CardData {
     type: 'npc' | 'material' | 'equipment' | 'clue';
     name: string;
     demandSymbols: string[];
-    /** 卡面上的人物描述，可用换行分段。 */
+    /** 悬停提示框中的卡牌描述，可用换行分段。 */
     descriptions: string;
     /** 符号 ID -> 玩家当前译义；缺失表示尚未破译。 */
     translations?: Record<string, string>;

@@ -1,16 +1,17 @@
 /**
  * 用途：集中管理卡牌视觉，避免入口和交互脚本重复维护布局。
- * 职责：按卡牌宽高生成画像、文字、符号与气泡，响应数据和尺寸更新。
+ * 职责：按卡牌宽高生成大图、名称、符号与气泡；详情交给共用 Tooltip，响应数据和尺寸更新。
  * 运行边界：挂在带 UITransform 的卡牌根节点上；父节点须为 UI 桌面。
  * 本脚本独占根节点子节点（刷新时重建），不要手动在其下添加持久节点。
  * 卡根节点须中心锚点、无旋转，缩放由本脚本管理；不处理拖动、配方和解谜判定。
  * 调整入口：文件顶部 CARD_SIZE / CARD_LAYOUT / CARD_STYLE / BUBBLE_LAYOUT；运行时调用 setSize。
  * 气泡保持在卡牌上方且尾尖向下；不做屏幕避让，靠近桌面顶边可能超出视野。
- * 宽高比例可改变，但底图会随之拉伸；画像保持比例裁切，徽章和符号保持正方形。
+ * 宽高比例可改变，但底图会随之拉伸；画像保持比例裁切，符号保持正方形。
  */
 import { _decorator, Component, Node, UITransform, Sprite, SpriteFrame, Label, Color, Mask, Layers } from 'cc';
 import { CardData } from './CardData';
 import { EventManager } from '../EventManager';
+import { Tooltip } from '../util/Tooltip';
 import { SpeechBubble } from '../util/SpeechBubble';
 const { ccclass } = _decorator;
 
@@ -18,18 +19,12 @@ const { ccclass } = _decorator;
 export const CARD_SIZE = { width: 70, height: 110 } as const;
 // 0.5 = 50%。位置以卡牌中心为原点，x 向右、y 向上。
 // x / width 相对卡宽，y / height 相对卡高；字体与正方形图标相对卡宽。
-export const CLUE_LAYOUT = {
-    title: { width: 0.84, height: 0.2, y: 0.25, font: 0.11 },
-    description: { width: 0.82, height: 0.45, y: -0.08, font: 0.085 },
-} as const;
 export const CARD_LAYOUT = {
-    portrait: { width: 0.792, height: 0.45143, x: 0, y: 0.19429 },
-    name: { width: 0.76, height: 0.08, x: 0, y: -0.13857, font: 0.076 },
-    badge: { size: 0.096, x: -0.348, y: 0.40571 },
-    descriptions: { width: 0.76, height: 0.27, x: 0, y: -0.32, font: 0.072 },
+    portrait: { width: 0.92, height: 0.76, x: 0, y: -0.04 },
+    name: { width: 0.86, height: 0.14, x: 0, y: 0.40, font: 0.11 },
 } as const;
 // 气泡宽度沿用你的 1.64 倍设置。文本采用独立 UI 像素字号，不受卡牌字体比例影响。
-// 内容超出时换行并自动增加主体高度，不缩小符号或译文。
+// 内容超出时换行并自动增加主体高度；译文仅在 Tooltip 展示。
 export const BUBBLE_LAYOUT = {
     widthRatio: 2.34,
     minHeightRatio: 0.74,
@@ -37,23 +32,20 @@ export const BUBBLE_LAYOUT = {
     pixelScale: 1,
     padding: 2,
     symbolSize: 32,
-    translationFontSize: 12,
-    translationLineHeight: 12,
-    translationLines: 2,
     cellWidth: 40,
     columnGap: 4,
-    symbolTranslationGap: 4,
     rowGap: 6,
 } as const;
 export const CARD_STYLE = {
     hoverScale: 1.05,
     lineSpacing: 0.016, // 相对卡宽
     textColor: { r: 65, g: 42, b: 34 },
-    untranslated: '_',
+    untranslated: '未破译',
 } as const;
 
 export interface CardArt {
     background: SpriteFrame; portrait: SpriteFrame; badge: SpriteFrame;
+    tooltip?: SpriteFrame;
     bubble: SpriteFrame; symbols: Record<string, SpriteFrame>;
 }
 @ccclass('CardView')
@@ -75,12 +67,11 @@ export class CardView extends Component {
     }
     public initialize(art: CardArt, data: CardData): void {
         this.art = art;
-        if (data.type === 'clue') {
-            this.setSize(CARD_SIZE.height, CARD_SIZE.height * art.background.originalSize.height / art.background.originalSize.width);
-        } else this.setSize(this.width, this.height);
+        this.setSize(this.width, this.height);
         this.setData(data);
     }
     public setData(data: CardData): void {
+        this.hideTooltip();
         this.data = data;
         if (!this.art) return;
         const speechVisible = this.bubble?.active ?? false;
@@ -88,14 +79,8 @@ export class CardView extends Component {
         this.bubble = null;
         const art = this.art;
         const w = this.width, h = this.height;
-        const { portrait, name, badge, descriptions } = CARD_LAYOUT;
+        const { portrait, name } = CARD_LAYOUT;
         this.picture(this.node, 'Background', art.background, w, h, 0, 0);
-        if (data.type === 'clue') {
-            const { title, description } = CLUE_LAYOUT;
-            this.label(this.node, 'NameLabel', data.name, w * title.width, h * title.height, 0, h * title.y, w * title.font);
-            this.label(this.node, 'DescriptionsLabel', data.descriptions, w * description.width, h * description.height, 0, h * description.y, w * description.font);
-            return;
-        }
         const mask = this.box(this.node, 'PortraitMask', w * portrait.width, h * portrait.height,
             w * portrait.x, h * portrait.y);
         mask.addComponent(Mask);
@@ -105,24 +90,28 @@ export class CardView extends Component {
         this.picture(mask, 'Portrait', art.portrait, portraitWidth, portraitWidth / ratio, 0, 0);
         this.label(this.node, 'NameLabel', data.name, w * name.width, h * name.height,
             w * name.x, h * name.y, w * name.font);
-        this.picture(this.node, 'Badge', art.badge, w * badge.size, w * badge.size,
-            w * badge.x, h * badge.y);
-        this.label(this.node, 'DescriptionsLabel', data.descriptions,
-            w * descriptions.width, h * descriptions.height, w * descriptions.x,
-            h * descriptions.y, w * descriptions.font);
         if (data.type === 'npc') { this.createSpeech(data); this.bubble!.active = speechVisible; }
     }
     public setHovered(value: boolean): void {
         this.hovered = value;
         const scale = value ? CARD_STYLE.hoverScale : 1;
         this.node.setScale(scale, scale, 1);
+        if (value && this.data) {
+            const types = { npc: '人物', material: '素材', equipment: '设备', clue: '线索' };
+            Tooltip.show(this.node, this.data.name, `${types[this.data.type]}\n${this.data.descriptions}`, this.art?.tooltip);
+        } else this.hideTooltip();
     }
+    public hideTooltip(): void {
+        Tooltip.hide(this.node);
+        if (this.bubble) Tooltip.hide(this.bubble);
+    }
+    protected onDisable(): void { this.hideTooltip(); }
     public handleClick(): void {
         if (!this.data) return;
         if (this.data.type === 'npc') this.toggleSpeech();
         EventManager.instance?.onCardEvent('clicked', this.data);
     }
-    public toggleSpeech(): void { if (this.bubble) this.bubble.active = !this.bubble.active; }
+    public toggleSpeech(): void { this.hideTooltip(); if (this.bubble) this.bubble.active = !this.bubble.active; }
     private createSpeech(data: CardData): void {
         const layout = BUBBLE_LAYOUT;
         const cellWidth = Math.max(layout.cellWidth, layout.symbolSize);
@@ -130,13 +119,22 @@ export class CardView extends Component {
         const columns = Math.max(1, Math.floor((width - layout.padding * 2 + layout.columnGap)
             / (cellWidth + layout.columnGap)));
         const rows = Math.max(1, Math.ceil(data.demandSymbols.length / columns));
-        const translationHeight = layout.translationLineHeight * layout.translationLines;
-        const cellHeight = layout.symbolSize + layout.symbolTranslationGap + translationHeight;
+        const cellHeight = layout.symbolSize;
         const contentHeight = rows * cellHeight + (rows - 1) * layout.rowGap;
         const height = Math.max(this.width * layout.minHeightRatio, contentHeight + layout.padding * 2);
         const result = SpeechBubble.create(this.node, this.art!.bubble,
             { width, height, pixelScale: layout.pixelScale, padding: layout.padding });
         this.bubble = result.node;
+        this.bubble.on(Node.EventType.MOUSE_ENTER, () => {
+            Tooltip.show(result.node, '需求译文', data.demandSymbols.map((id, i) =>
+                `${i + 1}. ${data.translations?.[id] || CARD_STYLE.untranslated}`).join('\n'), this.art?.tooltip);
+        });
+        this.bubble.on(Node.EventType.MOUSE_LEAVE, () => Tooltip.hide(result.node));
+        // 气泡输入不冒泡给卡牌，防止查看译文时触发拖动或切换气泡。
+        for (const type of [Node.EventType.TOUCH_START, Node.EventType.TOUCH_MOVE,
+            Node.EventType.TOUCH_END, Node.EventType.TOUCH_CANCEL]) {
+            this.bubble.on(type, (event: { propagationStopped: boolean }) => { event.propagationStopped = true; });
+        }
         // 尾尖在下方指向说话者；不再翻到卡片下方，保持尾巴方向一致。
         this.bubble.setPosition(0, this.height / 2 + this.height * layout.cardGapRatio);
         data.demandSymbols.forEach((id, index) => {
@@ -147,11 +145,6 @@ export class CardView extends Component {
             const cell = this.box(result.content, `Word${index}`, cellWidth, cellHeight, x, top - cellHeight / 2);
             this.picture(cell, 'Symbol', this.art!.symbols[id] || this.art!.badge,
                 layout.symbolSize, layout.symbolSize, 0, cellHeight / 2 - layout.symbolSize / 2);
-            const translation = this.label(cell, 'Translation', data.translations?.[id] || CARD_STYLE.untranslated,
-                cellWidth, translationHeight, 0, -cellHeight / 2 + translationHeight / 2, layout.translationFontSize);
-            translation.lineHeight = layout.translationLineHeight;
-            translation.enableWrapText = true;
-            translation.overflow = Label.Overflow.CLAMP;
         });
     }
     private box(parent: Node, name: string, width: number, height: number, x: number, y: number): Node {

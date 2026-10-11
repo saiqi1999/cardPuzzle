@@ -859,7 +859,11 @@
       "__uuid__": "84188cc3-91d5-4daa-a9d6-041edc92d4ea@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
-    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47"
+    "_id": "4eb5b4a0-e553-4d9b-96a6-3faba3159d47",
+    "tooltipBackground": {
+      "__uuid__": "e1459829-e33c-40ed-8437-8480a764fc83@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    }
   },
   {
     "__type__": "cc.SceneGlobals",

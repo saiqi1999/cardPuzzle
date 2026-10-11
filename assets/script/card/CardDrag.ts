@@ -39,7 +39,7 @@ export class CardDrag extends Component {
         this.touchId = event.getID(); this.startPoint.set(event.getUILocation()); this.moved = false;
         Vec3.subtract(this.offset, this.node.position, this.local(event));
         this.node.setSiblingIndex(this.node.parent!.children.length - 1);
-        this.view.setHovered(true); event.propagationStopped = true;
+        this.view.setHovered(true); this.view.hideTooltip(); event.propagationStopped = true;
     }
     private moveDrag(event: EventTouch): void {
         if (event.getID() !== this.touchId) return;
