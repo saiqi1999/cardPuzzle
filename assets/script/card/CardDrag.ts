@@ -27,7 +27,7 @@ export class CardDrag extends Component {
         this.node.on(Node.EventType.MOUSE_ENTER, this.enter, this);
         this.node.on(Node.EventType.MOUSE_LEAVE, this.leave, this);
     }
-    protected onDisable(): void { this.node.targetOff(this); this.touchId = null; this.view?.setHovered(false); }
+    protected onDisable(): void { this.node.targetOff(this); this.touchId = null; this.view?.setHovered(false); this.view?.setDragging(false); }
     private enter(): void { this.view.setHovered(true); this.clamp(); }
     private leave(): void { if (this.touchId === null) this.view.setHovered(false); }
     private local(event: EventTouch): Vec3 {
@@ -39,7 +39,7 @@ export class CardDrag extends Component {
         this.touchId = event.getID(); this.startPoint.set(event.getUILocation()); this.moved = false;
         Vec3.subtract(this.offset, this.node.position, this.local(event));
         this.node.setSiblingIndex(this.node.parent!.children.length - 1);
-        this.view.setHovered(true); this.view.hideTooltip(); event.propagationStopped = true;
+        this.view.setHovered(true); this.view.setDragging(true); this.view.hideTooltip(); event.propagationStopped = true;
     }
     private moveDrag(event: EventTouch): void {
         if (event.getID() !== this.touchId) return;
@@ -50,12 +50,12 @@ export class CardDrag extends Component {
     private endDrag(event: EventTouch): void {
         if (event.getID() !== this.touchId) return;
         const click = !this.moved && Vec2.distance(this.startPoint, event.getUILocation()) <= DRAG_THRESHOLD;
-        this.touchId = null; this.view.setHovered(false); this.clamp();
+        this.touchId = null; this.view.setDragging(false); this.view.setHovered(false); this.clamp();
         if (click) this.view.handleClick(); event.propagationStopped = true;
     }
     private cancelDrag(event: EventTouch): void {
         if (event.getID() !== this.touchId) return;
-        this.touchId = null; this.view.setHovered(false); this.clamp();
+        this.touchId = null; this.view.setDragging(false); this.view.setHovered(false); this.clamp();
     }
     protected lateUpdate(): void { this.clamp(); }
     private clamp(): void {
