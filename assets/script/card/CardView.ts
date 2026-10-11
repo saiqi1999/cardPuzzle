@@ -39,6 +39,7 @@ export const BUBBLE_LAYOUT = {
 } as const;
 export const CARD_STYLE = {
     hoverScale: 1.05,
+    hoverDuration: 0.12, // 卡面与阴影共用根节点缩放和同一过渡时间
     lineSpacing: 0.016, // 相对卡宽
     textColor: { r: 65, g: 42, b: 34 },
     untranslated: '未破译',
@@ -47,11 +48,11 @@ export const CARD_STYLE = {
 // 宽度相对卡宽，厚度与底边偏移也相对卡宽；透明度为 0~255。
 // 72×2 的 shadowbar 两端各保留 2 像素，仅拉伸中部；图片本身保持不变。
 export const CARD_SHADOW = {
-    widthRatio: 0.96, raisedWidthRatio: 1.16,
-    heightRatio: 0.04, raisedHeightRatio: 0.05,
-    offsetY: 0.01, raisedOffsetY: 0.055,
-    opacity: 150, raisedOpacity: 125,
-    capPixels: 2, transitionSeconds: 0.12,
+    widthRatio: 1,
+    heightRatio: 0.04,
+    overlapRatio: 0.01, // 阴影顶边藏入卡面少许，避免底边出现缝隙。
+    opacity: 150,
+    capPixels: 2,
 } as const;
 
 export interface CardArt {
@@ -112,8 +113,6 @@ export class CardView extends Component {
     }
     public setHovered(value: boolean): void {
         this.hovered = value;
-        const scale = value ? CARD_STYLE.hoverScale : 1;
-        this.node.setScale(scale, scale, 1);
         if (value && this.data) {
             const types = { npc: '人物', material: '素材', equipment: '设备', clue: '线索' };
             Tooltip.show(this.node, this.data.name, `${types[this.data.type]}\n${this.data.descriptions}`, this.art?.tooltip);
@@ -124,16 +123,18 @@ export class CardView extends Component {
         if (this.bubble) Tooltip.hide(this.bubble);
     }
     protected onDisable(): void {
-        this.hideTooltip(); this.dragging = false; this.hovered = false; this.lift = 0; this.updateShadow();
+        this.hideTooltip(); this.dragging = false; this.hovered = false; this.lift = 0; this.node.setScale(1, 1, 1); this.updateShadow();
     }
     /** CardDrag 只上报拖起/落下，阴影尺寸和过渡仍由 CardView 管理。 */
     public setDragging(value: boolean): void { this.dragging = value; }
     protected update(dt: number): void {
         const target = this.dragging || this.hovered ? 1 : 0;
         if (this.lift === target) return;
-        const step = Math.max(0, dt) / CARD_SHADOW.transitionSeconds;
+        const step = Math.max(0, dt) / CARD_STYLE.hoverDuration;
         this.lift = target > this.lift ? Math.min(target, this.lift + step) : Math.max(target, this.lift - step);
-        this.updateShadow();
+        // 阴影是根节点子节点，只随根节点缩放，不再额外放大或下移。
+        const scale = 1 + (CARD_STYLE.hoverScale - 1) * this.lift;
+        this.node.setScale(scale, scale, 1);
     }
     private createShadow(): void {
         // 只释放自建 SpriteFrame，不销毁 Main 所引用的源图或纹理。
@@ -145,6 +146,7 @@ export class CardView extends Component {
         frame.insetTop = frame.insetBottom = 0;
         this.shadowFrame = frame;
         this.shadow = this.box(this.node, 'Shadow', this.width, 1, 0, 0);
+        this.shadow.getComponent(UITransform)!.setAnchorPoint(0.5, 1);
         const sprite = this.shadow.addComponent(Sprite);
         sprite.type = Sprite.Type.SLICED; sprite.sizeMode = Sprite.SizeMode.CUSTOM;
         sprite.spriteFrame = frame;
@@ -152,13 +154,13 @@ export class CardView extends Component {
     }
     private updateShadow(): void {
         if (!this.shadow) return;
-        const s = CARD_SHADOW, mix = (a: number, b: number) => a + (b - a) * this.lift;
+        const s = CARD_SHADOW;
         this.shadow.getComponent(UITransform)!.setContentSize(
-            this.width * mix(s.widthRatio, s.raisedWidthRatio),
-            this.width * mix(s.heightRatio, s.raisedHeightRatio));
-        this.shadow.setPosition(0, -this.height / 2 - this.width * mix(s.offsetY, s.raisedOffsetY));
-        this.shadow.getComponent(Sprite)!.color = new Color(0, 0, 0, Math.round(mix(s.opacity, s.raisedOpacity)));
+            this.width * s.widthRatio, this.width * s.heightRatio);
+        this.shadow.setPosition(0, -this.height / 2 + this.width * s.overlapRatio);
+        this.shadow.getComponent(Sprite)!.color = new Color(0, 0, 0, s.opacity);
     }
+
     protected onDestroy(): void {
         this.shadowFrame?.destroy(); this.shadowFrame = null;
     }
