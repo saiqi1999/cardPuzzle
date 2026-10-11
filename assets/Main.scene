@@ -614,7 +614,7 @@
     "_enabled": true,
     "__prefab": null,
     "entranceDistance": 700,
-    "duration": 2.5,
+    "duration": 0.5,
     "spawnInterval": 0.2,
     "_id": "16c9f54d-676c-4707-bbe7-36625ea5d056"
   },
@@ -817,6 +817,10 @@
     },
     "boxImage": {
       "__uuid__": "7058a800-42b4-4871-b60e-c13d66998737@f9941",
+      "__expectedType__": "cc.SpriteFrame"
+    },
+    "shadowImage": {
+      "__uuid__": "f0afbf28-05e5-4662-93d5-362c0fd4e9a4@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "tooltipBackground": {

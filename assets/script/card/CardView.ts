@@ -38,7 +38,7 @@ export const BUBBLE_LAYOUT = {
     rowGap: 6,
 } as const;
 export const CARD_STYLE = {
-    hoverScale: 1.05,
+    hoverScale: 1.03,
     hoverDuration: 0.12, // 卡面与阴影共用根节点缩放和同一过渡时间
     lineSpacing: 0.016, // 相对卡宽
     textColor: { r: 65, g: 42, b: 34 },
@@ -50,7 +50,7 @@ export const CARD_STYLE = {
 export const CARD_SHADOW = {
     widthRatio: 1,
     heightRatio: 0.04,
-    raisedHeightRatio: 0.10, // 抬起后向下增厚；顶边锚点固定，因此中心随高度自然下移。
+    raisedHeightRatio: 0.06, // 抬起后向下增厚；顶边锚点固定，因此中心随高度自然下移。
     overlapRatio: 0.01, // 阴影顶边藏入卡面少许，避免底边出现缝隙。
     opacity: 150,
     capPixels: 2,
