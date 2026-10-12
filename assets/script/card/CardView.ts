@@ -50,7 +50,7 @@ export const CARD_STYLE = {
 export const CARD_SHADOW = {
     widthRatio: 1,
     heightRatio: 0.04,
-    flatScaleY: 1.00, hoverScaleY: 1.03, dragScaleY: 1.06, // 相对平放厚度；拖拽优先
+    flatScaleY: 1.00, hoverScaleY: 1.3, dragScaleY: 1.6, // 相对平放厚度；拖拽优先
     overlapRatio: 0.01, // 阴影顶边藏入卡面少许，避免底边出现缝隙。
     opacity: 150,
     capPixels: 2,
